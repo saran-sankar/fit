@@ -1,15 +1,25 @@
-import numpy as np
-from workout import Workout
-from setup import Setup
+import test_helper
 
-def generate_workouts(n):
-    workouts = []
-    for i in range(2):
-        workouts.append(Workout(i, min_changes = [5, 1, 1, 1],
-                        max_changes = [10, 5, 2, 2]))
-    return workouts
+if __name__ == '__main__':
+    import initial_recommendation
 
-def generate_setup(num_workouts):
-    workouts = generate_workouts(num_workouts)
-    setup = Setup(workouts)
-    return setup
+    num_workouts = 3
+    allowed_changes_in_one_step = 2
+
+    # To be done manually in production
+    setup = test_helper.generate_setup(num_workouts, allowed_changes_in_one_step) 
+    specifications = {}
+
+    num_iterations = 10
+
+    state = initial_recommendation.recommendation(setup, specifications)
+    state_parameters = state.parameters
+
+    for i in range(num_iterations):
+        
+        # To be replaced by RL in production
+        action = test_helper.generate_prediction(setup)
+
+        state = state.transition(action)
+
+    print(state.parameters)
