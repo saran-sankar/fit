@@ -4,14 +4,17 @@ class Workout:
     def verify_definition(self, min_changes, max_changes):
         return True
 
-    def __init__(self, id, min_changes, max_changes):
+    def __init__(self, id, min_changes, max_changes, calorie_formula):
         self.id = id
         if self.verify_definition(min_changes, max_changes):
             self.min_changes = min_changes
             self.max_changes = max_changes
         else:
             raise Exception(f'Error in the definition of workout {id}')
+        self.calorie_formula = calorie_formula
     
 if __name__ == '__main__':
-    workout_1 = Workout(1, min_changes = [5, 1, 1, 0.25],
-                        max_changes = [10, 5, 2, 10])
+    import test_helper
+
+    workout_1 = test_helper.generate_workouts(1)[0]
+    print(workout_1.min_changes, workout_1.max_changes)

@@ -4,6 +4,7 @@ import itertools
 
 class Setup:
     def num_possible_changes(self, workout):
+        # Calculate the maximum number of possible changes to a workout in one step
         min_changes = workout.min_changes
         max_changes = workout.max_changes
         num_changes = 0
@@ -13,8 +14,12 @@ class Setup:
         return num_changes
 
     def __init__(self, workouts: list[Workout], allowed_changes_in_one_step: int):
+        # Initialize the Setup object with a list of Workout objects and the maximum number of allowed changes in one step
         self.workouts = workouts
         self.num_workouts = len(workouts)
+        self.allowed_changes_in_one_step = allowed_changes_in_one_step
+
+        # Calculate the total number of possible actions
         self.num_actions = sum(np.prod(combination) 
                                for combination in itertools.combinations(
             [self.num_possible_changes(workout) 
@@ -22,7 +27,8 @@ class Setup:
              allowed_changes_in_one_step))
 
 if __name__ == '__main__':
-    import test
+    # Generate a sample setup and print the number of possible action sequences
+    import test_helper
 
-    setup = test.generate_setup(num_workouts=3, allowed_changes_in_one_step=2)
+    setup = test_helper.generate_setup(num_workouts=3, allowed_changes_in_one_step=2)
     print(setup.num_actions)
