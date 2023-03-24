@@ -134,6 +134,7 @@ def run_process():
                     # for the next state (using the target network)
                     next_input = np.copy(input_batch)
                     next_input[0, :-1, :, :] = input_batch[0, 1:, :, :]
+                    next_input[0, -1, 0, 0] = df.iloc[i]['TotalDistance']
                     next_input[0, -1, 1, 0] = recommendation_batch
                     next_q_values = target_model.predict(next_input)
                     max_next_q_value = np.max(next_q_values)
