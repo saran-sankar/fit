@@ -7,23 +7,22 @@ import math
 tf.random.set_seed(42)
 np.random.seed(42)
 
-def get_input_shape(l):
-    return np.sum([len(_) for _ in l])
-
 # define state as [V_r, V_w, V_p, d, w]
 # initial state
-V_w = [0] # a single workout with 1 param
 V_r = [1]
+V_w = [0] # a single workout with 1 param
 V_p = [200, 60, 0] # weight(lb), height(in), gender(0 for male 1 for female)
-d = [0] # 0-7 corresponding to day of week
+d = [0] # 0-6 corresponding to day of week
 w = [0] # week number since starting program
-initial_state = [0, 1, 200, 60, 0, 0, 0]
+
+initial_state = []
+for _ in [V_r, V_w, V_p, d, w]:
+    initial_state.extend(_)
 
 simulated_workouts = [] # represents v_w over course of x steps
 simulated_weights = []
 
-input_shape = [get_input_shape([V_r, V_w, V_p, d, w])]
-assert get_input_shape([V_r, V_w, V_p, d, w]) == [7]
+input_shape = [len(initial_state)]
 
 # define possible actions as [-2,-1,0,1,2]
 actions = [-2, -1, 0, 1, 2]
