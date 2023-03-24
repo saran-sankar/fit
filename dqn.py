@@ -56,8 +56,8 @@ def sample_experiences(batch_size):
 def calculate_reward(state, action, next_state):
     weight_0 = state[2] # weight
     weight_1 = next_state[2]
-    v_r = state[0]
-    v_w = state[1]
+    v_r = next_state[0]
+    v_w = next_state[1]
     workout_closeness = np.sum(np.square(v_r - v_w))
     return (1/(1+workout_closeness)) * (weight_1 - weight_0)
 
