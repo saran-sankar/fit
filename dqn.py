@@ -2,6 +2,7 @@ from tensorflow import keras
 import tensorflow as tf
 import numpy as np
 from collections import deque
+import math
 
 tf.random.set_seed(42)
 np.random.seed(42)
@@ -17,6 +18,9 @@ V_p = [200, 60, 0] # weight(lb), height(in), gender(0 for male 1 for female)
 d = [0] # 0-7 corresponding to day of week
 w = [0] # week number since starting program
 initial_state = [0, 1, 200, 60, 0, 0, 0]
+
+simulated_workouts = [] # represents v_w over course of x steps
+simulated_weights = []
 
 input_shape = [get_input_shape([V_r, V_w, V_p, d, w])]
 assert get_input_shape([V_r, V_w, V_p, d, w]) == [7]
@@ -61,18 +65,22 @@ def calculate_reward(state, action, next_state):
     workout_closeness = np.sum(np.square(v_r - v_w))
     return (1/(1+workout_closeness)) * (weight_1 - weight_0)
 
-def simulate_step(state, action):
+def simulate_step(state, action, step):
     # hardcoded for a single workout with 1 param
-    action_arr = np.zeros(len(state))
-    action_arr[0] = action
-    next_state = state + action_arr
+    next_state = state
+    next_state[0] = next_state[0] + action # update v_r
+    next_state[1] = simulated_workouts[step] # update v_w
+    next_state[2] = simulated_weights[step] # update weight
+    next_state[5] = next_state[5] + 1 if next_state[5] < 6 else 0 # increment day by 1
+    next_state[6] = math.floor(step / 7) # update week
+
     reward = calculate_reward(state, action, next_state)
     done = 1 if next_state[2] <= terminal_weight else 0
     return next_state, reward, done
 
-def run_one_step(state, epsilon):
+def run_one_step(state, epsilon, step):
     action = epsilon_greedy_policy(state, epsilon)
-    next_state, reward, done = simulate_step(state, action)
+    next_state, reward, done = simulate_step(state, action, step)
     replay_memory.append((state, action, reward, next_state, done))
     return next_state, reward, done
 
@@ -105,7 +113,7 @@ for episode in range(600):
     state_0 = initial_state
     for step in range(180):
         epsilon = max(1 - episode / 600, 0.01)
-        state_1, reward, done = run_one_step(state_0, epsilon)
+        state_1, reward, done = run_one_step(state_0, epsilon, step)
         if done:
             break
     rewards.append(step)
