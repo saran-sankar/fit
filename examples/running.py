@@ -6,6 +6,7 @@ from workout import Workout
 from setup import Setup
 import pandas as pd
 import random
+import matplotlib.pyplot as plt
 
 def create_q_model(num_actions, input_shape):
     inputs = layers.Input(shape=input_shape)
@@ -82,15 +83,19 @@ def run_process():
     user_id = df.iloc[0]['Id']
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+    model.compile(optimizer='adam', loss='binary_crossentropy')
 
     target_model = keras.models.clone_model(model)
     target_model.set_weights(model.get_weights())
 
     gamma = 0.95
     replay_buffer = []
-    replay_buffer_size = 50
+    replay_buffer_size = 5
 
-    num_iterations = 100
+    num_iterations = 939
+
+    rewards = []
+    closeness_scores = []
 
     for i in range(1, num_iterations + 1):
         data = df.iloc[i]
@@ -104,14 +109,17 @@ def run_process():
         else:
             q_values, action = run_step(model, input, epsilon=1.0)
             recommendation = max ([0.], input[-1][1] + action_map[action])
-            print(recommendation)
 
             calories = data['Calories']
             closeness = np.linalg.norm(recommendation - data['TotalDistance'])
 
+            closeness_scores.append(closeness)
+
             print(f"closeness={closeness}")
 
             reward = reward_function(calories, closeness)
+
+            rewards.append(reward)
 
             print(f"reward={reward}")
 
@@ -123,7 +131,7 @@ def run_process():
             # Calculate the target Q-value
             if len(replay_buffer) == replay_buffer_size:
                 # Sample a batch of experiences from the replay buffer
-                batch = random.sample(replay_buffer, setup.allowed_changes_in_one_step)
+                batch = random.sample(replay_buffer, 3)
 
                 # Calculate the target Q-value for each experience in the batch
                 for input_batch, action_batch, reward_batch, recommendation_batch in batch:
@@ -135,7 +143,7 @@ def run_process():
                     next_input = np.copy(input_batch)
                     next_input[0, :-1, :, :] = input_batch[0, 1:, :, :]
                     next_input[0, -1, 0, 0] = df.iloc[i]['TotalDistance']
-                    next_input[0, -1, 1, 0] = recommendation_batch
+                    next_input[0, -1, 1, 0] = recommendation_batch[0]
                     next_q_values = target_model.predict(next_input)
                     max_next_q_value = np.max(next_q_values)
                     target_q_values[0][action_batch] = reward_batch + gamma * max_next_q_value
@@ -143,4 +151,20 @@ def run_process():
                     # Train the model on the experience
                     model.fit(input_batch, target_q_values, epochs=1, verbose=0)
 
-run_process()
+    return rewards, closeness_scores
+
+rewards, closeness_scores = run_process()
+
+# Plot reward
+plt.subplot(2, 1, 1)
+plt.plot(range(1, len(rewards) + 1), rewards)
+plt.xlabel('Timesteps')
+plt.ylabel('Reward')
+
+# Plot closeness
+plt.subplot(2, 1, 2)
+plt.plot(range(1, len(closeness_scores) + 1), closeness_scores)
+plt.xlabel('Timesteps')
+plt.ylabel('Closeness')
+
+plt.show()
