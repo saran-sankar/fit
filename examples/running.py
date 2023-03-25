@@ -94,8 +94,8 @@ def run_process():
 
     num_iterations = 939
 
-    rewards = []
-    closeness_scores = []
+    rewards = {user_id: []}
+    closeness_scores = {user_id: []}
 
     for i in range(1, num_iterations + 1):
         data = df.iloc[i]
@@ -105,6 +105,8 @@ def run_process():
             input = reset_input(loc=i)
             replay_buffer = []
             user_id = data['Id']
+            rewards[user_id] = []
+            closeness_scores[user_id] = []
 
         else:
             q_values, action = run_step(model, input, epsilon=1.0)
@@ -113,13 +115,13 @@ def run_process():
             calories = data['Calories']
             closeness = np.linalg.norm(recommendation - data['TotalDistance'])
 
-            closeness_scores.append(closeness)
+            closeness_scores[user_id].append(closeness)
 
             print(f"closeness={closeness}")
 
             reward = reward_function(calories, closeness)
 
-            rewards.append(reward)
+            rewards[user_id].append(reward)
 
             print(f"reward={reward}")
 
@@ -131,7 +133,7 @@ def run_process():
             # Calculate the target Q-value
             if len(replay_buffer) == replay_buffer_size:
                 # Sample a batch of experiences from the replay buffer
-                batch = random.sample(replay_buffer, 3)
+                batch = random.sample(replay_buffer, 1)
 
                 # Calculate the target Q-value for each experience in the batch
                 for input_batch, action_batch, reward_batch, recommendation_batch in batch:
@@ -155,16 +157,26 @@ def run_process():
 
 rewards, closeness_scores = run_process()
 
-# Plot reward
-plt.subplot(2, 1, 1)
-plt.plot(range(1, len(rewards) + 1), rewards)
-plt.xlabel('Timesteps')
-plt.ylabel('Reward')
+# Save closeness scores for each user
+for user_id, scores in closeness_scores.items():
+    np.save(f'user_{user_id}_closeness.npy', scores)
 
-# Plot closeness
-plt.subplot(2, 1, 2)
-plt.plot(range(1, len(closeness_scores) + 1), closeness_scores)
-plt.xlabel('Timesteps')
-plt.ylabel('Closeness')
+# Plot closeness scores for each user
+ig, axs = plt.subplots(nrows=4, ncols=3, figsize=(12, 8))
 
+for i, user_id in enumerate(list(closeness_scores.keys())[-12:]):
+    row = i // 3
+    col = i % 3
+    x = range(1, len(closeness_scores[user_id]) + 1)
+    y = closeness_scores[user_id]
+    z = np.polyfit(x, y, 1)
+    p = np.poly1d(z)
+    axs[row, col].plot(x, y)
+    axs[row, col].plot(x, p(x), 'r--')
+    axs[row, col].plot(range(1, len(closeness_scores[user_id]) + 1), closeness_scores[user_id])
+    axs[row, col].set_xlabel('Timesteps')
+    axs[row, col].set_ylabel('Closeness')
+    axs[row, col].set_title(f'User {user_id}')
+
+plt.tight_layout()
 plt.show()
